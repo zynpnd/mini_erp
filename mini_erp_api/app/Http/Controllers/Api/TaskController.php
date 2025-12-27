@@ -7,8 +7,7 @@ use Illuminate\Http\Request;
 
 class TaskController extends Controller
 {
-    public function index(Request $request)
-    {
+    public function index(Request $request){
         return Task::with(['department', 'assignee'])
             ->where(function ($q) use ($request) {
                 if (!$request->user()->isAdmin()) {
@@ -19,8 +18,7 @@ class TaskController extends Controller
             ->paginate(10);
     }
 
-    public function store(Request $request)
-    {
+    public function store(Request $request){
         $request->validate([
             'title' => 'required',
             'department_id' => 'required|exists:departments,id',
@@ -36,8 +34,7 @@ class TaskController extends Controller
         ]);
     }
 
-    public function update(Task $task, Request $request)
-    {
+    public function update(Task $task, Request $request){
         // Kullanıcı sadece kendi görevini güncelleyebilir
         if (!$request->user()->isAdmin() && $task->assigned_to !== $request->user()->id) {
             abort(403);

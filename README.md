@@ -21,7 +21,7 @@ Frontend (React / Next.js) proje **ayrı bir repository** olarak geliştirilecek
 
 - Laravel Sanctum ile token bazlı authentication
 - Role sistemi (Admin / User)
-- Route seviyesinde middleware kontrolü
+- Route ve Policy seviyesinde yetki kontrolleri
 
 ---
 
@@ -43,11 +43,12 @@ Frontend (React / Next.js) proje **ayrı bir repository** olarak geliştirilecek
   - `done`
 
 **Admin**
-- Tüm görevleri görür
-- Görev oluşturur
+- Tüm görevleri görüntüleyebilir
+- Görev oluşturabilir
+- Görevleri güncelleyebilir
 
 **User**
-- Sadece kendi görevlerini görür
+- Sadece kendisine atanmış görevleri görür
 - Kendi görevlerinin durumunu günceller
 
 ---
@@ -67,9 +68,17 @@ Frontend (React / Next.js) proje **ayrı bir repository** olarak geliştirilecek
 
 - Department CRUD
 - Kullanıcı Yönetimi
-- Kanban Görev Görünümü
+- Kanban Görev Yönetimi
 - Aktivite Logları
-- Raporlama
+- Raporlama & Analiz
+
+---
+
+## 🛠 Testler
+
+- Test altyapısı ilerleyen aşamalarda eklenecektir.
+- (Pest / PHPUnit)
+
 
 ---
 
@@ -83,3 +92,5 @@ cp .env.example .env
 php artisan key:generate
 php artisan migrate
 php artisan serve
+
+

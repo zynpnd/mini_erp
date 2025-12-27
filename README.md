@@ -53,6 +53,14 @@ Frontend (React / Next.js) proje **ayrı bir repository** olarak geliştirilecek
 
 ---
 
+### 🔐 Authorization
+- Task işlemleri Laravel Policy ile korunmaktadır.
+- Admin tüm görevlerde yetkilidir.
+- User sadece kendisine atanmış görevleri görebilir ve güncelleyebilir.
+
+
+---
+
 ## 📡 API Yapısı (Özet)
 
 | Method | Endpoint | Açıklama | Yetki |

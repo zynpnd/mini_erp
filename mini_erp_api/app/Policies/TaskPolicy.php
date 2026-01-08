@@ -8,45 +8,76 @@ use App\Models\User;
 class TaskPolicy
 {
     /**
-     * Admin tüm task'leri görebilir
-     * User sadece kendi task'lerini görebilir
+     * Listeleme
      */
     public function viewAny(User $user): bool
     {
-        return true;
+        return true; // filtreyi controller'da yapacağız
     }
 
+    public function create(User $user, array $data): bool
+    {
+        if ($user->isAdmin()) return true;
+
+        // Departman yöneticisi mi?
+        $departmentId = $data['department_id'] ?? null;
+
+        if (! $departmentId) return false;
+
+        return $user->departments()
+            ->where('departments.id', $departmentId)
+            ->where('departments.manager_id', $user->id)
+            ->exists();
+    }
+
+
+
     /**
-     * Admin her task'i görür
-     * User sadece kendine atanmış task'i görür
+     * Tek görev görme
      */
     public function view(User $user, Task $task): bool
     {
-        return $user->is_admin || $task->user_id === $user->id;
+        if ($user->isAdmin()) return true;
+
+        // Kullanıcı bu departmanda mı?
+        $userInDepartment = $user->departments()
+            ->where('departments.id', $task->department_id)
+            ->exists();
+
+        if (! $userInDepartment) return false;
+
+        // Kendisine atanmışsa
+        if ($task->assigned_to === $user->id) return true;
+
+        // Departman yöneticisi ise
+        return $task->department->manager_id === $user->id;
     }
 
-    /**
-     * Sadece Admin task oluşturabilir
-     */
-    public function create(User $user): bool
-    {
-        return $user->is_admin;
-    }
 
     /**
-     * Admin her task'i güncelleyebilir
-     * User sadece kendi task'inin status'unu güncelleyebilir
+     * Güncelleme
      */
     public function update(User $user, Task $task): bool
     {
-        return $user->is_admin || $task->user_id === $user->id;
+        if ($user->isAdmin()) return true;
+
+        $userInDepartment = $user->departments()
+            ->where('departments.id', $task->department_id)
+            ->exists();
+
+        if (! $userInDepartment) return false;
+
+        if ($task->assigned_to === $user->id) return true;
+
+        return $task->department->manager_id === $user->id;
     }
 
+
     /**
-     * Şimdilik task silme yok
+     * Silme
      */
     public function delete(User $user, Task $task): bool
     {
-        return $user->is_admin;
+        return $user->isAdmin();
     }
 }

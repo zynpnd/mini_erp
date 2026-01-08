@@ -58,4 +58,9 @@ class User extends Authenticatable
         return $this->role === 'admin';
     }
 
+    public function departments()
+    {
+        return $this->belongsToMany(Department::class);
+    }
+
 }

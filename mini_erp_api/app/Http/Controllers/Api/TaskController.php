@@ -20,14 +20,24 @@ class TaskController extends Controller
     {
         $this->authorize('viewAny', Task::class);
 
+        $user = $request->user();
+
         return Task::with(['department', 'assignee'])
-            ->when(
-                !$request->user()->isAdmin(),
-                fn ($q) => $q->where('assigned_to', $request->user()->id)
-            )
+            ->where(function ($q) use ($user) {
+
+                if ($user->isAdmin()) {
+                    return;
+                }
+
+                $q->where('assigned_to', $user->id)
+                ->orWhereHas('department', function ($dq) use ($user) {
+                    $dq->where('manager_id', $user->id);
+                });
+            })
             ->latest()
             ->paginate(10);
     }
+
 
     /**
      * Task oluşturma
@@ -35,22 +45,30 @@ class TaskController extends Controller
      */
     public function store(Request $request)
     {
-        $this->authorize('create', Task::class);
-
-        $validated = $request->validate([
-            'title' => 'required|string',
+        $data = $request->validate([
+            'title' => 'required|string|max:255',
             'description' => 'nullable|string',
             'department_id' => 'required|exists:departments,id',
             'assigned_to' => 'required|exists:users,id',
         ]);
 
+        $this->authorize('create', [Task::class, $data]);
+
+        // Atanan kullanıcı bu departmanda mı?
+        $userInDepartment = \App\Models\User::find($data['assigned_to'])
+            ->departments()
+            ->where('departments.id', $data['department_id'])
+            ->exists();
+
+        if (! $userInDepartment) {
+            return response()->json([
+                'message' => 'Kullanıcı bu departmana ait değil'
+            ], 422);
+        }
+
         return Task::create([
-            'title' => $validated['title'],
-            'description' => $validated['description'] ?? null,
-            'department_id' => $validated['department_id'],
-            'assigned_to' => $validated['assigned_to'],
+            ...$data,
             'created_by' => $request->user()->id,
-            'status' => 'todo',
         ]);
     }
 
@@ -60,17 +78,21 @@ class TaskController extends Controller
      * - User: sadece kendi task'ini güncelleyebilir
      */
     public function update(Request $request, Task $task)
-    {
-        $this->authorize('update', $task);
+        {
+            $this->authorize('update', $task);
 
-        $validated = $request->validate([
-            'title' => 'sometimes|string',
-            'description' => 'sometimes|nullable|string',
-            'status' => 'sometimes|in:todo,doing,done',
-        ]);
+            $data = $request->validate([
+                'status' => 'required|in:todo,doing,done',
+            ]);
 
-        $task->update($validated);
+            $task->update([
+                'status' => $data['status'],
+            ]);
 
-        return $task;
-    }
+            return response()->json([
+                'message' => 'Görev durumu güncellendi',
+                'task' => $task
+            ]);
+        }
+
 }

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -16,27 +17,39 @@ class AuthController extends Controller
         ]);
 
         if (!Auth::attempt($credentials)) {
-            return response()->json([
-                'message' => 'Invalid credentials'
-            ], 401);
+            return apiError('Hatalı giriş bilgileri', 401);
         }
 
-        $user = $request->user();
+        /** @var User $user */
+        $user = Auth::user();
 
-        return response()->json([
-            'token' => $user->createToken('api-token')->plainTextToken,
+        $token = $user->createToken('api-token')->plainTextToken;
+
+        $user->load(['role', 'departments']);
+
+        return apiSuccess([
+            'token' => $token,
             'user' => $user,
-        ]);
+        ], 'Giriş başarılı');
     }
-
 
     public function logout(Request $request)
     {
-        $request->user()->currentAccessToken()->delete();
+        /** @var User $user */
+        $user = $request->user();
 
-        return response()->json([
-            'message' => 'Logged out'
-        ]);
+        $user->currentAccessToken()?->delete();
+
+        return apiSuccess(null, 'Çıkış yapıldı');
     }
 
+    public function me(Request $request)
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        $user->load(['role', 'departments']);
+
+        return apiSuccess($user);
+    }
 }

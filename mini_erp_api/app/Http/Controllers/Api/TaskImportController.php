@@ -3,27 +3,25 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\ImportTasksJob;
 use Illuminate\Http\Request;
-use Maatwebsite\Excel\Excel;
-use App\Imports\TaskImport;
-use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Support\Facades\Auth;
 
 class TaskImportController extends Controller
 {
-    use AuthorizesRequests;
 
-     public function import(Request $request)
+    public function import(Request $request)
     {
         $this->authorize('create', \App\Models\Task::class);
 
         $request->validate([
-            'file' => 'required|file|mimes:xlsx,csv'
+            'file' => ['required', 'file', 'mimes:xlsx,csv'],
         ]);
 
-        Excel::import(new TaskImport(auth()->user()), $request->file('file'));
+        $path = $request->file('file')->store('imports');
 
-        return response()->json([
-            'message' => 'Görevler başarıyla içe aktarıldı'
-        ]);
+        ImportTasksJob::dispatch($path, Auth::id());
+
+        return apiSuccess(null, 'Görev import işlemi başlatıldı');
     }
 }

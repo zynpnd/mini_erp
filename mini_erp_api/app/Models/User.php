@@ -22,7 +22,6 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'role', // admin | user
     ];
 
     /**
@@ -55,7 +54,7 @@ class User extends Authenticatable
 
     public function isAdmin(): bool
     {
-        return $this->role === 'admin';
+       return $this->role?->name === 'admin';
     }
 
     public function departments()

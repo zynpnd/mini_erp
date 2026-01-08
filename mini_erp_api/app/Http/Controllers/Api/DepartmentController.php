@@ -3,65 +3,76 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreDepartmentRequest;
+use App\Http\Requests\UpdateDepartmentRequest;
 use App\Models\Department;
-use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
-use Illuminate\Http\Request;
+use App\Services\DepartmentService;
 
 class DepartmentController extends Controller
 {
-    use AuthorizesRequests;
 
-    public function index(Request $request)
+    public function __construct(
+        protected DepartmentService $departmentService
+    ) {}
+
+    /**
+     * Departman listesi
+     */
+    public function index()
     {
         $this->authorize('viewAny', Department::class);
 
-        $query = Department::with(['manager']);
+        $departments = $this->departmentService->list();
 
-        if (! $request->user()->isAdmin()) {
-            $query->whereHas('users', function ($q) use ($request) {
-                $q->where('users.id', $request->user()->id);
-            });
-        }
-
-        return $query->paginate(10);
+        return apiSuccess($departments);
     }
 
-    public function store(Request $request)
+    /**
+     * Departman oluştur
+     */
+    public function store(StoreDepartmentRequest $request)
     {
         $this->authorize('create', Department::class);
 
-        $data = $request->validate([
-            'name' => 'required|string|max:255',
-            'manager_id' => 'required|exists:users,id',
-        ]);
+        $department = $this->departmentService->create($request->validated());
 
-        return Department::create($data);
+        return apiSuccess($department, 'Departman oluşturuldu');
     }
 
+    /**
+     * Departman göster
+     */
     public function show(Department $department)
     {
         $this->authorize('view', $department);
 
-        return $department->load(['manager', 'users']);
+        return apiSuccess($department->load('users'));
     }
 
-    public function update(Request $request, Department $department)
+    /**
+     * Departman güncelle
+     */
+    public function update(UpdateDepartmentRequest $request, Department $department)
     {
         $this->authorize('update', $department);
 
-        $department->update(
-            $request->only('name', 'manager_id')
+        $updated = $this->departmentService->update(
+            $department,
+            $request->validated()
         );
 
-        return $department;
+        return apiSuccess($updated, 'Departman güncellendi');
     }
 
+    /**
+     * Departman sil
+     */
     public function destroy(Department $department)
     {
         $this->authorize('delete', $department);
 
-        $department->delete();
+        $this->departmentService->delete($department);
 
-        return response()->noContent();
+        return apiSuccess(null, 'Departman silindi');
     }
 }

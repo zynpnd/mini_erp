@@ -3,96 +3,64 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreTaskRequest;
+use App\Http\Requests\UpdateTaskRequest;
+use App\Http\Requests\UpdateTaskStatusRequest;
 use App\Models\Task;
+use App\Services\TaskService;
 use Illuminate\Http\Request;
-use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
-
 class TaskController extends Controller
 {
-    use AuthorizesRequests;
+    public function __construct(
+        protected TaskService $taskService
+    ) {}
 
     /**
      * Task listesi
-     * - Admin: tüm task'ler
-     * - User: sadece kendisine atanmış task'ler
      */
     public function index(Request $request)
     {
-        $this->authorize('viewAny', Task::class);
+        $tasks = $this->taskService->listForUser($request->user());
 
-        $user = $request->user();
-
-        return Task::with(['department', 'assignee'])
-            ->where(function ($q) use ($user) {
-
-                if ($user->isAdmin()) {
-                    return;
-                }
-
-                $q->where('assigned_to', $user->id)
-                ->orWhereHas('department', function ($dq) use ($user) {
-                    $dq->where('manager_id', $user->id);
-                });
-            })
-            ->latest()
-            ->paginate(10);
+        return apiSuccess($tasks);
     }
 
-
     /**
-     * Task oluşturma
-     * - Sadece Admin
+     * Task oluştur
      */
-    public function store(Request $request)
+    public function store(StoreTaskRequest $request)
     {
-        $data = $request->validate([
-            'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'department_id' => 'required|exists:departments,id',
-            'assigned_to' => 'required|exists:users,id',
-        ]);
+        $this->authorize('create', Task::class);
 
-        $this->authorize('create', [Task::class, $data]);
+        $task = $this->taskService->create($request->validated());
 
-        // Atanan kullanıcı bu departmanda mı?
-        $userInDepartment = \App\Models\User::find($data['assigned_to'])
-            ->departments()
-            ->where('departments.id', $data['department_id'])
-            ->exists();
-
-        if (! $userInDepartment) {
-            return response()->json([
-                'message' => 'Kullanıcı bu departmana ait değil'
-            ], 422);
-        }
-
-        return Task::create([
-            ...$data,
-            'created_by' => $request->user()->id,
-        ]);
+        return apiSuccess($task, 'Görev oluşturuldu');
     }
 
     /**
-     * Task güncelleme
-     * - Admin: her şeyi güncelleyebilir
-     * - User: sadece kendi task'ini güncelleyebilir
+     * Task güncelle
      */
-    public function update(Request $request, Task $task)
-        {
-            $this->authorize('update', $task);
+    public function update(UpdateTaskRequest $request, Task $task)
+    {
+        $this->authorize('update', $task);
 
-            $data = $request->validate([
-                'status' => 'required|in:todo,doing,done',
-            ]);
+        $updatedTask = $this->taskService->update($task, $request->validated());
 
-            $task->update([
-                'status' => $data['status'],
-            ]);
+        return apiSuccess($updatedTask, 'Görev güncellendi');
+    }
 
-            return response()->json([
-                'message' => 'Görev durumu güncellendi',
-                'task' => $task
-            ]);
-        }
+    /**
+     * Task status değiştir
+     */
+    public function updateStatus(UpdateTaskStatusRequest $request, Task $task)
+    {
+        $this->authorize('updateStatus', $task);
 
+        $updatedTask = $this->taskService->updateStatus(
+            $task,
+            $request->validated()['status']
+        );
+
+        return apiSuccess($updatedTask, 'Görev durumu güncellendi');
+    }
 }

@@ -5,35 +5,24 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Department;
 use App\Models\User;
-use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
-use Illuminate\Http\Request;
+use App\Services\DepartmentService;
 
 class DepartmentUserController extends Controller
 {
-    use AuthorizesRequests;
+    public function __construct(
+        protected DepartmentService $departmentService
+    ) {}
+
     /**
-     * Departmana kullanıcı ekle
+     * Departmana kullanıcı ata
      */
-    public function store(Request $request, Department $department)
+    public function store(Department $department, User $user)
     {
-        $this->authorize('manageUsers', $department);
+        $this->authorize('assignUser', $department);
 
-        $data = $request->validate([
-            'user_id' => 'required|exists:users,id',
-        ]);
+        $this->departmentService->assignUser($department, $user);
 
-        // Zaten ekli mi?
-        if ($department->users()->where('user_id', $data['user_id'])->exists()) {
-            return response()->json([
-                'message' => 'Kullanıcı zaten bu departmanda'
-            ], 422);
-        }
-
-        $department->users()->attach($data['user_id']);
-
-        return response()->json([
-            'message' => 'Kullanıcı departmana eklendi'
-        ]);
+        return apiSuccess(null, 'Kullanıcı departmana atandı');
     }
 
     /**
@@ -41,12 +30,10 @@ class DepartmentUserController extends Controller
      */
     public function destroy(Department $department, User $user)
     {
-        $this->authorize('manageUsers', $department);
+        $this->authorize('removeUser', $department);
 
-        $department->users()->detach($user->id);
+        $this->departmentService->removeUser($department, $user);
 
-        return response()->json([
-            'message' => 'Kullanıcı departmandan çıkarıldı'
-        ]);
+        return apiSuccess(null, 'Kullanıcı departmandan çıkarıldı');
     }
 }

@@ -3,29 +3,31 @@
 namespace App\Imports;
 
 use App\Models\Task;
+use App\Models\User;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\ToCollection;
-use Maatwebsite\Excel\Concerns\WithHeadingRow;
 
-class TaskImport implements ToCollection, WithHeadingRow
+class TaskImport implements ToCollection
 {
-    protected $user;
+    protected User $user;
 
-    public function __construct($user)
+    public function __construct(int $userId)
     {
-        $this->user = $user;
+        $this->user = User::findOrFail($userId);
     }
 
     public function collection(Collection $rows)
     {
-        foreach ($rows as $row) {
+        foreach ($rows as $index => $row) {
+
+            if ($index === 0) continue; // header
+
             Task::create([
-                'title' => $row['title'],
-                'description' => $row['description'] ?? null,
-                'status' => $row['status'] ?? 'todo',
-                'assigned_to' => $row['assigned_to'] ?? null,
-                'department_id' => $this->user->department_id,
-                'created_by' => $this->user->id,
+                'title' => $row[0],
+                'description' => $row[1] ?? null,
+                'department_id' => $row[2],
+                'assigned_user_id' => $row[3] ?? null,
+                'status' => $row[4] ?? 'todo',
             ]);
         }
     }

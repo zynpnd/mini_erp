@@ -1,10 +1,8 @@
 # mini_erp_api (Backend)
 
-**mini_erp_api**, küçük ve orta ölçekli işletmeler için geliştirilen  
-**Laravel tabanlı, modüler ve yetkilendirme odaklı bir ERP Backend API**’sidir.
+**mini_erp_api**, küçük ve orta ölçekli işletmeler için geliştirilen **Laravel tabanlı, modüler ve yetkilendirme odaklı bir ERP Backend API**’sidir.
 
-Proje; görev yönetimi, departman yapısı, kullanıcı yetkilendirme,  
-aktivite loglama ve ölçeklenebilir mimari prensipleri üzerine kurulmuştur.
+Proje; görev yönetimi, departman yapısı, kullanıcı yetkilendirme, aktivite loglama ve ölçeklenebilir mimari prensipleri üzerine kurulmuştur.
 
 > Frontend (React / Next.js) ayrı bir repository olarak geliştirilmektedir.
 
